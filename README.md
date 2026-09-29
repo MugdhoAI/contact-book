@@ -1,6 +1,6 @@
 # Contact Book
 
-A simple command-line contact book with JSON file storage.
+A simple command line contact book with JSON file storage.
 
 ## Installation
 
