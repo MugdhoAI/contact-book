@@ -19,6 +19,8 @@ contact update 1 --phone "01800000000"
 contact delete 1
 ```
 
+Email is optional, but when an email is given it must be a valid address, for example `alice@example.com`. Invalid email addresses are rejected when a contact is added or updated.
+
 The contact data is stored in a JSON file. Set `CONTACT_BOOK_DATA_FILE` to choose a custom storage location.
 
 ## Development
