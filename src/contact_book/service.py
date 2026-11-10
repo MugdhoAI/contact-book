@@ -4,6 +4,24 @@ from .models import Contact
 from .storage import ContactStorage
 
 
+def _validate_email(email: str) -> None:
+    """Reject email addresses that are clearly malformed.
+
+    An empty email is allowed because the field is optional. A non-empty
+    email must contain exactly one at sign, a non-empty local part, and a
+    domain with at least one dot that is not at either end.
+    """
+    if not email:
+        return
+    if any(character.isspace() for character in email) or email.count("@") != 1:
+        raise ValueError("Invalid email address.")
+    local, domain = email.split("@")
+    if not local or not domain:
+        raise ValueError("Invalid email address.")
+    if "." not in domain or domain.startswith(".") or domain.endswith(".") or ".." in domain:
+        raise ValueError("Invalid email address.")
+
+
 class ContactService:
     """Manage contacts using a persistent storage backend."""
 
@@ -19,6 +37,7 @@ class ContactService:
         email = email.strip()
         if not name:
             raise ValueError("Name cannot be empty.")
+        _validate_email(email)
 
         contacts = self.storage.load()
         next_id = max((contact.id for contact in contacts), default=0) + 1
@@ -63,6 +82,7 @@ class ContactService:
             )
             if not updated.name:
                 raise ValueError("Name cannot be empty.")
+            _validate_email(updated.email)
             contacts[index] = updated
             self.storage.save(contacts)
             return updated

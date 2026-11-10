@@ -64,6 +64,36 @@ def test_empty_name_is_rejected(tmp_path):
         service.add_contact("   ")
 
 
+def test_add_rejects_invalid_email(tmp_path):
+    service = make_service(tmp_path)
+
+    for invalid in ("not-an-email", "alice@", "@example.com", "alice@example", "alice @example.com", "alice@example..com"):
+        with pytest.raises(ValueError, match="Invalid email address"):
+            service.add_contact("Alice", email=invalid)
+
+    assert service.list_contacts() == []
+
+
+def test_add_allows_empty_and_valid_email(tmp_path):
+    service = make_service(tmp_path)
+
+    without_email = service.add_contact("Alice")
+    with_email = service.add_contact("Bob", email="bob@example.com")
+
+    assert without_email.email == ""
+    assert with_email.email == "bob@example.com"
+
+
+def test_update_rejects_invalid_email_and_keeps_original(tmp_path):
+    service = make_service(tmp_path)
+    service.add_contact("Alice", "01700000000", "alice@example.com")
+
+    with pytest.raises(ValueError, match="Invalid email address"):
+        service.update_contact(1, email="alice@invalid")
+
+    assert service.get_contact(1).email == "alice@example.com"
+
+
 def test_missing_contact_is_rejected(tmp_path):
     service = make_service(tmp_path)
 
