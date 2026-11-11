@@ -59,7 +59,7 @@ class ContactService:
     def add_contact(self, name: str, phone: str = "", email: str = "") -> Contact:
         name = name.strip()
         phone = phone.strip()
-        email = email.strip()
+        email = email.strip().lower()
         if not name:
             raise ValueError("Name cannot be empty.")
         _validate_email(email)
@@ -105,7 +105,7 @@ class ContactService:
                 id=contact.id,
                 name=contact.name if name is None else name.strip(),
                 phone=contact.phone if phone is None else phone.strip(),
-                email=contact.email if email is None else email.strip(),
+                email=contact.email if email is None else email.strip().lower(),
             )
             if not updated.name:
                 raise ValueError("Name cannot be empty.")
