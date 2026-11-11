@@ -1,6 +1,7 @@
 """Command-line interface for Contact Book."""
 
 import argparse
+from pathlib import Path
 
 from . import __version__
 from .service import ContactService
@@ -10,6 +11,7 @@ from .storage import ContactStorage
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="contact", description="Manage contacts stored in a JSON file.")
     parser.add_argument("--version", action="version", version=__version__)
+    parser.add_argument("--file", default=None, help="Path to the contacts data file")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     add = subparsers.add_parser("add", help="Add a contact")
@@ -43,7 +45,8 @@ def format_contact(contact) -> str:
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
-    service = ContactService(ContactStorage())
+    storage = ContactStorage(Path(args.file)) if args.file else ContactStorage()
+    service = ContactService(storage)
 
     try:
         if args.command == "add":

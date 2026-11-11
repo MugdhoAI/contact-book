@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from contact_book.cli import main
 from contact_book.models import Contact
 from contact_book.service import ContactService
 from contact_book.storage import ContactStorage
@@ -170,3 +171,15 @@ def test_load_reports_malformed_entries_with_a_clear_error(tmp_path):
     path.write_text('["just a string"]', encoding="utf-8")
     with pytest.raises(ValueError, match="invalid entry"):
         service.list_contacts()
+
+
+def test_cli_add_and_list_with_file_option(tmp_path, monkeypatch, capsys):
+    data_file = tmp_path / "cli-contacts.json"
+
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "add", "Alice", "--email", "alice@example.com"])
+    assert main() == 0
+    assert "Added contact 1: Alice" in capsys.readouterr().out
+
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "list"])
+    assert main() == 0
+    assert "Alice" in capsys.readouterr().out
