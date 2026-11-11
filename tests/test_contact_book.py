@@ -157,3 +157,16 @@ def test_update_rejects_invalid_phone_and_keeps_original(tmp_path):
         service.update_contact(1, phone="not a number")
 
     assert service.get_contact(1).phone == "01700000000"
+
+
+def test_load_reports_malformed_entries_with_a_clear_error(tmp_path):
+    path = tmp_path / "contacts.json"
+    service = ContactService(ContactStorage(path))
+
+    path.write_text('[{"name": "No ID"}]', encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid entry"):
+        service.list_contacts()
+
+    path.write_text('["just a string"]', encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid entry"):
+        service.list_contacts()

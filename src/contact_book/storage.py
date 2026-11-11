@@ -28,7 +28,10 @@ class ContactStorage:
         if not isinstance(raw, list):
             raise ValueError("Contact storage must contain a JSON list.")
 
-        return [Contact.from_dict(item) for item in raw]
+        try:
+            return [Contact.from_dict(item) for item in raw]
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            raise ValueError("Contact storage contains an invalid entry.") from exc
 
     def save(self, contacts: list[Contact]) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
