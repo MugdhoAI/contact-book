@@ -129,3 +129,31 @@ def test_update_allows_keeping_own_email(tmp_path):
     updated = service.update_contact(1, email="alice@example.com", phone="01800000000")
 
     assert updated.phone == "01800000000"
+
+
+def test_add_rejects_invalid_phone(tmp_path):
+    service = make_service(tmp_path)
+
+    for invalid in ("call-me", "123", "+880 123", "01700000000000000000"):
+        with pytest.raises(ValueError, match="Invalid phone number"):
+            service.add_contact("Alice", phone=invalid)
+
+    assert service.list_contacts() == []
+
+
+def test_add_allows_common_phone_formats(tmp_path):
+    service = make_service(tmp_path)
+
+    assert service.add_contact("Alice", phone="+880 1700-000000").phone == "+880 1700-000000"
+    assert service.add_contact("Bob", phone="(017) 000 0000").phone == "(017) 000 0000"
+    assert service.add_contact("Cid").phone == ""
+
+
+def test_update_rejects_invalid_phone_and_keeps_original(tmp_path):
+    service = make_service(tmp_path)
+    service.add_contact("Alice", "01700000000", "alice@example.com")
+
+    with pytest.raises(ValueError, match="Invalid phone number"):
+        service.update_contact(1, phone="not a number")
+
+    assert service.get_contact(1).phone == "01700000000"

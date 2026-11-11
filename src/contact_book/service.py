@@ -22,6 +22,22 @@ def _validate_email(email: str) -> None:
         raise ValueError("Invalid email address.")
 
 
+def _validate_phone(phone: str) -> None:
+    """Reject phone numbers with stray characters or too few digits.
+
+    An empty phone is allowed because the field is optional. A non-empty
+    phone may contain digits, spaces, and the separators + - ( ) and must
+    hold between 7 and 15 digits.
+    """
+    if not phone:
+        return
+    if any(not (character.isdigit() or character in " +-()") for character in phone):
+        raise ValueError("Invalid phone number.")
+    digits = sum(1 for character in phone if character.isdigit())
+    if digits < 7 or digits > 15:
+        raise ValueError("Invalid phone number.")
+
+
 def _ensure_email_available(contacts: list[Contact], email: str, exclude_id: int | None = None) -> None:
     """Reject an email that another contact already uses, ignoring case."""
     if not email:
@@ -47,6 +63,7 @@ class ContactService:
         if not name:
             raise ValueError("Name cannot be empty.")
         _validate_email(email)
+        _validate_phone(phone)
 
         contacts = self.storage.load()
         _ensure_email_available(contacts, email)
@@ -93,6 +110,7 @@ class ContactService:
             if not updated.name:
                 raise ValueError("Name cannot be empty.")
             _validate_email(updated.email)
+            _validate_phone(updated.phone)
             _ensure_email_available(contacts, updated.email, exclude_id=contact.id)
             contacts[index] = updated
             self.storage.save(contacts)
