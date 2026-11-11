@@ -22,6 +22,15 @@ def _validate_email(email: str) -> None:
         raise ValueError("Invalid email address.")
 
 
+def _ensure_email_available(contacts: list[Contact], email: str, exclude_id: int | None = None) -> None:
+    """Reject an email that another contact already uses, ignoring case."""
+    if not email:
+        return
+    for contact in contacts:
+        if contact.id != exclude_id and contact.email.lower() == email.lower():
+            raise ValueError("A contact with this email already exists.")
+
+
 class ContactService:
     """Manage contacts using a persistent storage backend."""
 
@@ -40,6 +49,7 @@ class ContactService:
         _validate_email(email)
 
         contacts = self.storage.load()
+        _ensure_email_available(contacts, email)
         next_id = max((contact.id for contact in contacts), default=0) + 1
         contact = Contact(next_id, name, phone, email)
         self.storage.save([*contacts, contact])

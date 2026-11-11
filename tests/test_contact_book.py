@@ -99,3 +99,13 @@ def test_missing_contact_is_rejected(tmp_path):
 
     with pytest.raises(ValueError, match="Contact 99 not found"):
         service.get_contact(99)
+
+
+def test_add_rejects_duplicate_email_ignoring_case(tmp_path):
+    service = make_service(tmp_path)
+    service.add_contact("Alice", email="alice@example.com")
+
+    with pytest.raises(ValueError, match="already exists"):
+        service.add_contact("Alicia", email="ALICE@example.com")
+
+    assert len(service.list_contacts()) == 1
