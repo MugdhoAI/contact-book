@@ -93,6 +93,7 @@ class ContactService:
             if not updated.name:
                 raise ValueError("Name cannot be empty.")
             _validate_email(updated.email)
+            _ensure_email_available(contacts, updated.email, exclude_id=contact.id)
             contacts[index] = updated
             self.storage.save(contacts)
             return updated

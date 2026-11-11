@@ -109,3 +109,23 @@ def test_add_rejects_duplicate_email_ignoring_case(tmp_path):
         service.add_contact("Alicia", email="ALICE@example.com")
 
     assert len(service.list_contacts()) == 1
+
+
+def test_update_rejects_duplicate_email_and_keeps_original(tmp_path):
+    service = make_service(tmp_path)
+    service.add_contact("Alice", email="alice@example.com")
+    service.add_contact("Bob", email="bob@example.com")
+
+    with pytest.raises(ValueError, match="already exists"):
+        service.update_contact(2, email="Alice@Example.com")
+
+    assert service.get_contact(2).email == "bob@example.com"
+
+
+def test_update_allows_keeping_own_email(tmp_path):
+    service = make_service(tmp_path)
+    service.add_contact("Alice", "01700000000", "alice@example.com")
+
+    updated = service.update_contact(1, email="alice@example.com", phone="01800000000")
+
+    assert updated.phone == "01800000000"
