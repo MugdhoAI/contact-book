@@ -193,6 +193,27 @@ def test_load_reports_malformed_entries_with_a_clear_error(tmp_path):
         service.list_contacts()
 
 
+def test_cli_count_reports_number_of_contacts(tmp_path, monkeypatch, capsys):
+    data_file = tmp_path / "cli-contacts.json"
+    service = ContactService(ContactStorage(data_file))
+
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "count"])
+    assert main() == 0
+    assert "0 contacts stored." in capsys.readouterr().out
+
+    service.add_contact("Alice")
+    service.add_contact("Bob")
+
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "count"])
+    assert main() == 0
+    assert "2 contacts stored." in capsys.readouterr().out
+
+    service.delete_contact(2)
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "count"])
+    assert main() == 0
+    assert "1 contact stored." in capsys.readouterr().out
+
+
 def test_cli_add_and_list_with_file_option(tmp_path, monkeypatch, capsys):
     data_file = tmp_path / "cli-contacts.json"
 

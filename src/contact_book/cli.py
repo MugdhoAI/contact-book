@@ -21,6 +21,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("list", help="List all contacts")
 
+    subparsers.add_parser("count", help="Show how many contacts are stored")
+
     search = subparsers.add_parser("search", help="Search contacts")
     search.add_argument("query")
 
@@ -59,6 +61,10 @@ def main() -> int:
             else:
                 for contact in contacts:
                     print(format_contact(contact))
+        elif args.command == "count":
+            total = len(service.list_contacts())
+            noun = "contact" if total == 1 else "contacts"
+            print(f"{total} {noun} stored.")
         elif args.command == "search":
             contacts = service.search_contacts(args.query)
             if not contacts:
