@@ -38,6 +38,16 @@ def test_search_matches_name_phone_and_email(tmp_path):
     assert len(service.search_contacts("@example.com")) == 2
 
 
+def test_search_matches_phone_by_digits_ignoring_separators(tmp_path):
+    service = make_service(tmp_path)
+    service.add_contact("Alice Smith", "+880 1700-000000", "alice@example.com")
+    service.add_contact("Bob Jones", "01899999999", "bob@example.com")
+
+    assert [contact.name for contact in service.search_contacts("01700000000")] == ["Alice Smith"]
+    assert [contact.name for contact in service.search_contacts("+8801700000000")] == ["Alice Smith"]
+    assert len(service.search_contacts("0189")) == 1
+
+
 def test_update_contact(tmp_path):
     service = make_service(tmp_path)
     service.add_contact("Alice", "01700000000", "alice@example.com")

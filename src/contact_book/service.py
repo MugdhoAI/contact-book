@@ -87,13 +87,18 @@ class ContactService:
         query = query.strip().lower()
         if not query:
             return []
-        return [
-            contact
-            for contact in self.list_contacts()
-            if query in contact.name.lower()
-            or query in contact.phone.lower()
-            or query in contact.email.lower()
-        ]
+        query_digits = "".join(character for character in query if character.isdigit())
+        matches = []
+        for contact in self.list_contacts():
+            phone_digits = "".join(character for character in contact.phone if character.isdigit())
+            if (
+                query in contact.name.lower()
+                or query in contact.phone.lower()
+                or query in contact.email.lower()
+                or (query_digits and query_digits in phone_digits)
+            ):
+                matches.append(contact)
+        return matches
 
     def update_contact(
         self,
