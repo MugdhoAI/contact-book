@@ -239,6 +239,51 @@ def test_export_contacts_csv_returns_count(tmp_path):
     assert "alice@example.com" in export_file.read_text(encoding="utf-8")
 
 
+def test_cli_update_search_show_and_delete(tmp_path, monkeypatch, capsys):
+    data_file = tmp_path / "cli-contacts.json"
+    service = ContactService(ContactStorage(data_file))
+    service.add_contact("Alice Smith", "01700000000", "alice@example.com")
+    service.add_contact("Bob Jones", "01899999999", "bob@example.com")
+
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "update", "1", "--phone", "01800000000"])
+    assert main() == 0
+    assert "Updated contact 1: Alice Smith" in capsys.readouterr().out
+
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "search", "0180"])
+    assert main() == 0
+    assert "Alice Smith" in capsys.readouterr().out
+
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "show", "2"])
+    assert main() == 0
+    assert "2: Bob Jones" in capsys.readouterr().out
+
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "delete", "2"])
+    assert main() == 0
+    assert "Deleted contact 2." in capsys.readouterr().out
+    assert service.list_contacts()[0].name == "Alice Smith"
+
+
+def test_cli_update_without_fields_is_rejected(tmp_path, monkeypatch):
+    data_file = tmp_path / "cli-contacts.json"
+    service = ContactService(ContactStorage(data_file))
+    service.add_contact("Alice")
+
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "update", "1"])
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 2
+    assert service.get_contact(1).name == "Alice"
+
+
+def test_cli_show_missing_contact_is_rejected(tmp_path, monkeypatch):
+    data_file = tmp_path / "cli-contacts.json"
+
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "show", "99"])
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 2
+
+
 def test_cli_add_and_list_with_file_option(tmp_path, monkeypatch, capsys):
     data_file = tmp_path / "cli-contacts.json"
 
