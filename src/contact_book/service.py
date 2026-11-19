@@ -4,6 +4,11 @@ from .models import Contact
 from .storage import ContactStorage
 
 
+def _normalize_name(name: str) -> str:
+    """Collapse repeated whitespace in a name to single spaces."""
+    return " ".join(name.split())
+
+
 def _validate_email(email: str) -> None:
     """Reject email addresses that are clearly malformed.
 
@@ -57,7 +62,7 @@ class ContactService:
         return sorted(self.storage.load(), key=lambda contact: (contact.name.lower(), contact.id))
 
     def add_contact(self, name: str, phone: str = "", email: str = "") -> Contact:
-        name = name.strip()
+        name = _normalize_name(name)
         phone = phone.strip()
         email = email.strip().lower()
         if not name:
@@ -103,7 +108,7 @@ class ContactService:
                 continue
             updated = Contact(
                 id=contact.id,
-                name=contact.name if name is None else name.strip(),
+                name=contact.name if name is None else _normalize_name(name),
                 phone=contact.phone if phone is None else phone.strip(),
                 email=contact.email if email is None else email.strip().lower(),
             )

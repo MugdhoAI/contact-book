@@ -58,6 +58,16 @@ def test_delete_contact(tmp_path):
         service.get_contact(1)
 
 
+def test_add_collapses_repeated_whitespace_in_name(tmp_path):
+    service = make_service(tmp_path)
+
+    created = service.add_contact("Alice   Smith", "01700000000")
+    assert created.name == "Alice Smith"
+
+    updated = service.update_contact(1, name="  Alice   Jane   Smith  ")
+    assert updated.name == "Alice Jane Smith"
+
+
 def test_empty_name_is_rejected(tmp_path):
     service = make_service(tmp_path)
 
