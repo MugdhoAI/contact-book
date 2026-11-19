@@ -293,7 +293,9 @@ def test_cli_add_and_list_with_file_option(tmp_path, monkeypatch, capsys):
 
     monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "list"])
     assert main() == 0
-    assert "Alice" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "Alice" in output
+    assert "1 contact stored." in output
 
 
 def test_email_is_stored_in_lowercase(tmp_path):

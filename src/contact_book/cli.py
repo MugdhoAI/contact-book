@@ -75,6 +75,8 @@ def main() -> int:
             else:
                 for contact in contacts:
                     print(format_contact(contact))
+                noun = "contact" if len(contacts) == 1 else "contacts"
+                print(f"{len(contacts)} {noun} stored.")
         elif args.command == "count":
             total = len(service.list_contacts())
             noun = "contact" if total == 1 else "contacts"
