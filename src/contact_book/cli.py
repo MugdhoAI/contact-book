@@ -1,6 +1,7 @@
 """Command-line interface for Contact Book."""
 
 import argparse
+import csv
 from pathlib import Path
 
 from . import __version__
@@ -37,7 +38,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     delete = subparsers.add_parser("delete", help="Delete a contact")
     delete.add_argument("id", type=int)
+
+    export = subparsers.add_parser("export", help="Export contacts to a CSV file")
+    export.add_argument("path")
     return parser
+
+
+def export_contacts_csv(contacts, path: Path) -> int:
+    """Write contacts to a CSV file, returning how many were written."""
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["id", "name", "phone", "email"])
+        for contact in contacts:
+            writer.writerow([contact.id, contact.name, contact.phone, contact.email])
+    return len(contacts)
 
 
 def format_contact(contact) -> str:
@@ -82,6 +96,10 @@ def main() -> int:
         elif args.command == "delete":
             service.delete_contact(args.id)
             print(f"Deleted contact {args.id}.")
+        elif args.command == "export":
+            total = export_contacts_csv(service.list_contacts(), Path(args.path))
+            noun = "contact" if total == 1 else "contacts"
+            print(f"Exported {total} {noun} to {args.path}.")
     except ValueError as exc:
         parser.error(str(exc))
 

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from contact_book.cli import main
+from contact_book.cli import export_contacts_csv, main
 from contact_book.models import Contact
 from contact_book.service import ContactService
 from contact_book.storage import ContactStorage
@@ -212,6 +212,31 @@ def test_cli_count_reports_number_of_contacts(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "count"])
     assert main() == 0
     assert "1 contact stored." in capsys.readouterr().out
+
+
+def test_cli_export_writes_contacts_to_csv(tmp_path, monkeypatch, capsys):
+    data_file = tmp_path / "cli-contacts.json"
+    export_file = tmp_path / "contacts.csv"
+    service = ContactService(ContactStorage(data_file))
+    service.add_contact("Alice Smith", "01700000000", "alice@example.com")
+    service.add_contact("Bob Jones")
+
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "export", str(export_file)])
+    assert main() == 0
+    assert "Exported 2 contacts to" in capsys.readouterr().out
+
+    rows = export_file.read_text(encoding="utf-8").splitlines()
+    assert rows[0] == "id,name,phone,email"
+    assert rows[1] == "1,Alice Smith,01700000000,alice@example.com"
+    assert rows[2] == "2,Bob Jones,,"
+
+
+def test_export_contacts_csv_returns_count(tmp_path):
+    contacts = [Contact(1, "Alice", "01700000000", "alice@example.com")]
+    export_file = tmp_path / "out.csv"
+
+    assert export_contacts_csv(contacts, export_file) == 1
+    assert "alice@example.com" in export_file.read_text(encoding="utf-8")
 
 
 def test_cli_add_and_list_with_file_option(tmp_path, monkeypatch, capsys):
