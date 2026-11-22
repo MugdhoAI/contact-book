@@ -41,6 +41,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     export = subparsers.add_parser("export", help="Export contacts to a CSV file")
     export.add_argument("path")
+
+    import_csv = subparsers.add_parser("import", help="Import contacts from a CSV file")
+    import_csv.add_argument("path")
     return parser
 
 
@@ -52,6 +55,33 @@ def export_contacts_csv(contacts, path: Path) -> int:
         for contact in contacts:
             writer.writerow([contact.id, contact.name, contact.phone, contact.email])
     return len(contacts)
+
+
+def import_contacts_csv(service, path: Path) -> tuple[int, int]:
+    """Import contacts from a CSV file, returning (imported, rejected) counts.
+
+    Each row is added through ContactService.add_contact, so imported rows
+    follow the same validation and duplicate email rules as the add command.
+    A row that add_contact rejects is skipped and counted as rejected, and
+    the remaining rows are still imported. The id column written by export
+    is ignored: imported contacts get fresh ids from the add path.
+    """
+    imported = 0
+    rejected = 0
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            try:
+                service.add_contact(
+                    row.get("name") or "",
+                    row.get("phone") or "",
+                    row.get("email") or "",
+                )
+            except ValueError:
+                rejected += 1
+            else:
+                imported += 1
+    return imported, rejected
 
 
 def format_contact(contact) -> str:
@@ -102,7 +132,16 @@ def main() -> int:
             total = export_contacts_csv(service.list_contacts(), Path(args.path))
             noun = "contact" if total == 1 else "contacts"
             print(f"Exported {total} {noun} to {args.path}.")
+        elif args.command == "import":
+            imported, rejected = import_contacts_csv(service, Path(args.path))
+            noun = "contact" if imported == 1 else "contacts"
+            print(f"Imported {imported} {noun} from {args.path}.")
+            if rejected:
+                row_noun = "row" if rejected == 1 else "rows"
+                print(f"Rejected {rejected} {row_noun}.")
     except ValueError as exc:
+        parser.error(str(exc))
+    except OSError as exc:
         parser.error(str(exc))
 
     return 0

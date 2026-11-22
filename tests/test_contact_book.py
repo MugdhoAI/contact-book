@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from contact_book.cli import export_contacts_csv, main
+from contact_book.cli import export_contacts_csv, import_contacts_csv, main
 from contact_book.models import Contact
 from contact_book.service import ContactService
 from contact_book.storage import ContactStorage
@@ -229,6 +229,68 @@ def test_cli_export_writes_contacts_to_csv(tmp_path, monkeypatch, capsys):
     assert rows[0] == "id,name,phone,email"
     assert rows[1] == "1,Alice Smith,01700000000,alice@example.com"
     assert rows[2] == "2,Bob Jones,,"
+
+
+def test_csv_import_round_trip_restores_contacts(tmp_path, monkeypatch, capsys):
+    source = make_service(tmp_path / "source")
+    source.add_contact("Alice Smith", "01700000000", "alice@example.com")
+    source.add_contact("Bob Jones", "01899999999", "bob@example.com")
+    source.add_contact("Cid Ray")
+    export_file = tmp_path / "contacts.csv"
+    assert export_contacts_csv(source.list_contacts(), export_file) == 3
+
+    data_file = tmp_path / "restored.json"
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "import", str(export_file)])
+    assert main() == 0
+    assert "Imported 3 contacts from" in capsys.readouterr().out
+
+    restored = ContactService(ContactStorage(data_file))
+    assert [(contact.name, contact.phone, contact.email) for contact in restored.list_contacts()] == [
+        (contact.name, contact.phone, contact.email) for contact in source.list_contacts()
+    ]
+    assert [contact.id for contact in restored.list_contacts()] == [1, 2, 3]
+
+
+def test_csv_import_rejects_invalid_rows_and_imports_valid_ones(tmp_path):
+    import_file = tmp_path / "import.csv"
+    import_file.write_text(
+        "id,name,phone,email\n"
+        "1,Alice Smith,01700000000,alice@example.com\n"
+        "2,Bad Email,01700000000,not-an-email\n"
+        "3,,01700000000,no-name@example.com\n"
+        "4,Bad Phone,call-me,bad-phone@example.com\n"
+        "5,Bob Jones,01899999999,bob@example.com\n",
+        encoding="utf-8",
+    )
+    service = make_service(tmp_path)
+
+    imported, rejected = import_contacts_csv(service, import_file)
+
+    assert (imported, rejected) == (2, 3)
+    assert [contact.name for contact in service.list_contacts()] == ["Alice Smith", "Bob Jones"]
+
+
+def test_csv_import_rejects_duplicate_emails(tmp_path, monkeypatch, capsys):
+    data_file = tmp_path / "cli-contacts.json"
+    service = ContactService(ContactStorage(data_file))
+    service.add_contact("Alice Smith", "01700000000", "alice@example.com")
+    import_file = tmp_path / "import.csv"
+    import_file.write_text(
+        "id,name,phone,email\n"
+        "1,Alicia,01800000000,ALICE@example.com\n"
+        "2,Bob Jones,01899999999,bob@example.com\n"
+        "3,Bobby,01900000000,Bob@Example.com\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr("sys.argv", ["contact", "--file", str(data_file), "import", str(import_file)])
+    assert main() == 0
+    output = capsys.readouterr().out
+    assert "Imported 1 contact from" in output
+    assert "Rejected 2 rows." in output
+
+    assert [contact.name for contact in service.list_contacts()] == ["Alice Smith", "Bob Jones"]
+    assert service.get_contact(1).email == "alice@example.com"
 
 
 def test_export_contacts_csv_returns_count(tmp_path):
